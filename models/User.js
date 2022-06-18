@@ -2,7 +2,7 @@
 //schema : 주제(유저 정보, 상품 정보)에 대한 타입을 지정해주는 것
 
 const mongoose = require("mongoose");
-const userSchema = mongoose.schema({
+const userSchema = mongoose.Schema({
   name: {
     type: String,
     maxlength: 50,
