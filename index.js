@@ -7,7 +7,8 @@ const port = 8080;
 
 //클라이언트에서 오는 정보를 분석하는데 사용
 const bodyParser = require("body-parser");
-
+//토큰 저장소를 위한 라이브러리
+const cookieParser = require("cookie-parser");
 const config = require("./config/key");
 const { User } = require("./models/User");
 
@@ -15,6 +16,8 @@ const { User } = require("./models/User");
 app.use(bodyParser.urlencoded({ extended: true }));
 //application/json 파일을 분석하기 위함
 app.use(bodyParser.json());
+//쿠키에 저장하기 위해 사용한다고 선언
+app.use(cookieParser());
 
 //몽구스로 어플과 몽고 DB연결
 const mongoose = require("mongoose");
@@ -39,6 +42,39 @@ app.post("/register", (req, res) => {
   user.save((err, userInfo) => {
     if (err) return res.json({ success: false, err });
     return res.status(200).json({ success: true });
+  });
+});
+
+app.post("/login", (req, res) => {
+  //1. 넘어온 정보가 DB에 저장된 회원 정보에 있는지 확인
+  User.findOne({ email: req.body.email }, (err, user) => {
+    if (!user) {
+      return res.json({
+        loginSuccess: false,
+        message: "일치하는 유저가 없습니다",
+      });
+    }
+
+    //2. DB의 비밀번호와 동일한 지 확인
+    user.comparePassword(req.body.password, (err, isMatch) => {
+      if (!isMatch) {
+        return res.json({
+          loginSuccess: false,
+          message: "비밀번호가 틀렸습니다.",
+        });
+      }
+
+      //3. 확인된 회원에 대한 token을 생성
+      user.generateToken((err, user) => {
+        if (err) return res.status(400).send(err);
+
+        //토큰 저장소 설정
+        res
+          .cookie("x_auth", user.token)
+          .status(200)
+          .json({ loginSuccess: true, userId: user._id });
+      });
+    });
   });
 });
 
