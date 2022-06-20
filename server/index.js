@@ -10,6 +10,7 @@ const bodyParser = require("body-parser");
 //토큰 저장소를 위한 라이브러리
 const cookieParser = require("cookie-parser");
 const config = require("./config/key");
+const { auth } = require("./middleware/auth");
 const { User } = require("./models/User");
 
 //application/x-www-form-urlencoded 파일을 분석하기 위함
@@ -34,7 +35,12 @@ app.get("/", (req, res) => {
   res.send("Hello World! 바로 적용되는 지 확인합니다 - nodemon - 확인완료!");
 });
 
-app.post("/register", (req, res) => {
+app.get("/api/hello", (req, res) => {
+  //send : 클라이언트로 보내는 코드
+  res.send("안녕하세요, 프론트 !");
+});
+
+app.post("/api/user/register", (req, res) => {
   //client에서 입력한 정보를 DB에 저장하기 위함
   const user = new User(req.body);
 
@@ -45,7 +51,7 @@ app.post("/register", (req, res) => {
   });
 });
 
-app.post("/login", (req, res) => {
+app.post("/api/user/login", (req, res) => {
   //1. 넘어온 정보가 DB에 저장된 회원 정보에 있는지 확인
   User.findOne({ email: req.body.email }, (err, user) => {
     if (!user) {
@@ -75,6 +81,29 @@ app.post("/login", (req, res) => {
           .json({ loginSuccess: true, userId: user._id });
       });
     });
+  });
+});
+
+//auth라는 미들웨어 추가 : 콜백함수를 실행하기 전에 우선 실행시키는 과정
+app.get("/api/users/auth", auth, (req, res) => {
+  res.status(200).json({
+    _id: req.user._id,
+    isAdmin: req.user.role === 0 ? false : true,
+    isAuth: true,
+    email: req.user.email,
+    name: req.user.name,
+    lastname: req.user.lastname,
+    role: req.user.role,
+    image: req.user.image,
+  });
+});
+
+//로그아웃 필요, auth 미들웨어 사용 이유 ? 이미 로그인 된 상태 -> auth 로직이 통과된 상태
+app.get("/api/users/logout", auth, (req, res) => {
+  //유저 시그마에서 정보를 찾아서 업데이트 -> id값으로 해당 로그인한 유저를 찾고, token을 삭제하는 것
+  User.findOneAndUpdate({ _id: req.user._id }, { token: "" }, (err, user) => {
+    if (err) return res.json({ success: false, err: err });
+    return res.status(200).send({ success: true });
   });
 });
 

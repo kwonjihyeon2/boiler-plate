@@ -52,6 +52,7 @@ userSchema.pre("save", function (next) {
       bcrypt.hash(user.password, salt, function (err, hash) {
         if (err) return next(err);
         user.password = hash;
+        //다음 로직이 진행될 수 있게 next() 작성 필요 -> 아니면 이 함수에서 갇히게 됨.
         next();
       });
     });
@@ -65,6 +66,7 @@ userSchema.methods.comparePassword = function (plainPassword, callback) {
   //입력된 비밀번호를 암호화시킨 후 비교해야함
   bcrypt.compare(plainPassword, this.password, (err, isMatch) => {
     if (err) return callback(err);
+    //만약 에러가 없다면 isMatch를 전달할 것
     callback(null, isMatch);
   });
 };
@@ -79,6 +81,23 @@ userSchema.methods.generateToken = function (callback) {
   user.save(function (err, user) {
     if (err) return callback(err);
     callback(null, user);
+  });
+};
+
+userSchema.statics.findByToken = function (token, callback) {
+  var user = this;
+  console.log(user);
+
+  //토큰 복호화 작업
+  jwt.verify(token, "secretToken", function (err, decoded) {
+    //유저 _id를 이용해서 유저를 찾은 뒤
+
+    user.findOne({ _id: decoded, token: token }, function (err, user) {
+      if (err) return callback(err);
+      callback(null, user);
+    });
+
+    //클라이언트에서 가져온 token과 DB의 token이 일치하는 지 확인
   });
 };
 
