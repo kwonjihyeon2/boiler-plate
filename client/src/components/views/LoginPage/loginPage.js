@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import Auth from "../../../hoc/auth";
 import { loginUser } from "../../../_action/user_action";
 
 function LoginPage(props) {
@@ -46,9 +47,13 @@ function LoginPage(props) {
         style={{ display: "flex", flexDirection: "column" }}
       >
         <label>Email</label>
-        <input type="email" value={email} onChange={onChangeEmail} />
+        <input type="email" value={email || ""} onChange={onChangeEmail} />
         <label>Password</label>
-        <input type="password" value={password} onChange={onChangePassword} />
+        <input
+          type="password"
+          value={password || ""}
+          onChange={onChangePassword}
+        />
         <br />
         <button>Login</button>
       </form>
@@ -56,4 +61,4 @@ function LoginPage(props) {
   );
 }
 
-export default LoginPage;
+export default Auth(LoginPage, false);
